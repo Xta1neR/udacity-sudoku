@@ -1,0 +1,212 @@
+:root {
+    --board-edge: #26383d;
+    --board-surface: #fff;
+    --grid-line: #aebdc0;
+    --box-divider: #26383d;
+    --cell-background: #f8fbfa;
+    --cell-alternate-background: #e4efeb;
+    --cell-text: #17292d;
+    --prefilled-text: #102329;
+    --cell-focus-background: #cce9df;
+    --cell-incorrect-background: #ffd9d6;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --board-edge: #dce8e4;
+        --board-surface: #111d20;
+        --grid-line: #566a6b;
+        --box-divider: #dce8e4;
+        --cell-background: #172629;
+        --cell-alternate-background: #243a36;
+        --cell-text: #eff7f3;
+        --prefilled-text: #fff;
+        --cell-focus-background: #35534a;
+        --cell-incorrect-background: #663c39;
+    }
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    margin-top: 30px;
+    color: #333;
+}
+
+.game-options {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 24px auto 0;
+}
+
+.game-options select,
+#player-name {
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    font: inherit;
+}
+
+.timer-label {
+    margin-left: 12px;
+    color: #333;
+    font-variant-numeric: tabular-nums;
+}
+
+#sudoku-board {
+    display: inline-block;
+    box-sizing: border-box;
+    width: min(92vw, 404px);
+    margin: 30px auto;
+    border: 4px solid var(--board-edge);
+    background: var(--board-surface);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sudoku-row {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+.sudoku-cell {
+    box-sizing: border-box;
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid var(--grid-line);
+    text-align: center;
+    font-size: 20px;
+    outline: none;
+    color: var(--cell-text);
+    background: var(--cell-background);
+    transition: background 0.2s;
+}
+
+.sudoku-row:nth-child(-n + 3) .sudoku-cell:nth-child(-n + 3),
+.sudoku-row:nth-child(-n + 3) .sudoku-cell:nth-child(n + 7),
+.sudoku-row:nth-child(n + 4):nth-child(-n + 6) .sudoku-cell:nth-child(n + 4):nth-child(-n + 6),
+.sudoku-row:nth-child(n + 7) .sudoku-cell:nth-child(-n + 3),
+.sudoku-row:nth-child(n + 7) .sudoku-cell:nth-child(n + 7) {
+    background: var(--cell-alternate-background);
+}
+
+.sudoku-cell:focus {
+    background: var(--cell-focus-background);
+}
+
+.sudoku-cell.prefilled {
+    font-weight: bold;
+    color: var(--prefilled-text);
+}
+
+.sudoku-cell.incorrect {
+    background: var(--cell-incorrect-background);
+}
+
+.sudoku-cell:nth-child(3),
+.sudoku-cell:nth-child(6) {
+    border-right: 3px solid var(--box-divider);
+}
+
+.sudoku-row:nth-child(3) .sudoku-cell,
+.sudoku-row:nth-child(6) .sudoku-cell {
+    border-bottom: 3px solid var(--box-divider);
+}
+
+.controls {
+    margin: 20px auto;
+}
+
+button {
+    padding: 8px 18px;
+    margin: 0 8px;
+    font-size: 16px;
+    border: none;
+    background: #1976d2;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #1565c0;
+}
+
+#message {
+    margin-left: 20px;
+    font-size: 16px;
+    color: #d32f2f;
+}
+
+#score-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 18px auto;
+}
+
+#score-form[hidden] {
+    display: none;
+}
+
+#leaderboard {
+    width: min(620px, calc(100% - 32px));
+    margin: 36px auto 48px;
+    text-align: left;
+}
+
+#leaderboard h2 {
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.leaderboard-scroll {
+    overflow-x: auto;
+}
+
+#leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+#leaderboard th,
+#leaderboard td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+#leaderboard th {
+    background: #e8eef3;
+    color: #222;
+}
+
+#leaderboard-empty {
+    color: #555;
+}
+
+@media (max-width: 520px) {
+    .game-options {
+        flex-wrap: wrap;
+    }
+
+    #score-form {
+        flex-wrap: wrap;
+        padding: 0 16px;
+    }
+}

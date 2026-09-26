@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sudoku Game</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <h1>Sudoku Game</h1>
+  <div class="game-options">
+    <label for="difficulty">Difficulty</label>
+    <select id="difficulty">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+    <span class="timer-label">Time <output id="elapsed-time">00:00</output></span>
+  </div>
+  <div id="sudoku-board"></div>
+  <div class="controls">
+    <button id="new-game">New Game</button>
+    <button id="check-solution">Check Solution</button>
+    <span id="message"></span>
+  </div>
+  <form id="score-form" hidden>
+    <label for="player-name">Your name</label>
+    <input id="player-name" name="player-name" maxlength="40" autocomplete="name" required>
+    <button type="submit">Save score</button>
+  </form>
+  <section id="leaderboard" aria-labelledby="leaderboard-title">
+    <h2 id="leaderboard-title">Top 10</h2>
+    <p id="leaderboard-empty">No scores yet.</p>
+    <div class="leaderboard-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Player</th>
+            <th scope="col">Time</th>
+            <th scope="col">Difficulty</th>
+            <th scope="col">Hints</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-entries"></tbody>
+      </table>
+    </div>
+  </section>
+  <script src="/static/main.js"></script>
+</body>
+</html>
