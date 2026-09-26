@@ -169,7 +169,8 @@ h1 {
     font-weight: bold;
 }
 
-#sudoku-board .sudoku-cell.incorrect {
+#sudoku-board .sudoku-cell.incorrect,
+#sudoku-board .sudoku-cell.conflict {
     background: var(--cell-incorrect-background);
 }
 

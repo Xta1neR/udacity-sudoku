@@ -51,10 +51,53 @@ function createBoardElement() {
       input.addEventListener('input', (e) => {
         const val = e.target.value.replace(/[^1-9]/g, '');
         e.target.value = val;
+        updateConflictHighlights();
       });
       rowDiv.appendChild(input);
     }
     boardDiv.appendChild(rowDiv);
+  }
+}
+
+function updateConflictHighlights() {
+  const inputs = Array.from(document.querySelectorAll('.sudoku-cell'));
+  const values = inputs.map((input) => input.value);
+  const conflicts = new Set();
+  const markGroupConflicts = (indices) => {
+    const byValue = new Map();
+    indices.forEach((index) => {
+      const value = values[index];
+      if (!value) return;
+      if (!byValue.has(value)) byValue.set(value, []);
+      byValue.get(value).push(index);
+    });
+    byValue.forEach((matches) => {
+      if (matches.length > 1) matches.forEach((index) => conflicts.add(index));
+    });
+  };
+
+  for (let group = 0; group < SIZE; group++) {
+    markGroupConflicts(Array.from({length: SIZE}, (_, offset) => group * SIZE + offset));
+    markGroupConflicts(Array.from({length: SIZE}, (_, offset) => offset * SIZE + group));
+  }
+  for (let boxRow = 0; boxRow < SIZE; boxRow += 3) {
+    for (let boxCol = 0; boxCol < SIZE; boxCol += 3) {
+      const indices = [];
+      for (let row = boxRow; row < boxRow + 3; row++) {
+        for (let col = boxCol; col < boxCol + 3; col++) {
+          indices.push(row * SIZE + col);
+        }
+      }
+      markGroupConflicts(indices);
+    }
+  }
+
+  inputs.forEach((input, index) => input.classList.toggle('conflict', conflicts.has(index)));
+  const message = document.getElementById('message');
+  if (conflicts.size > 0) {
+    setMessage('This entry conflicts with another number.');
+  } else if (message.textContent === 'This entry conflicts with another number.') {
+    message.textContent = '';
   }
 }
 
@@ -269,6 +312,7 @@ async function checkSolution() {
         inp.classList.add('incorrect');
       }
     }
+    updateConflictHighlights();
 
     if (incorrect.size === 0) {
       setMessage('Congratulations! You solved it!', false);
@@ -336,6 +380,7 @@ async function requestHint() {
     input.classList.add('hint');
     puzzle[row][col] = value;
     hintsUsed += 1;
+    updateConflictHighlights();
   } catch (error) {
     console.error('Unable to fetch a hint.', error);
     setMessage('Unable to fetch a hint. Please try again.');
