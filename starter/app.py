@@ -87,6 +87,10 @@ def give_hint():
         return json_error('No empty cells left to hint')
 
     row, col = random.choice(empty_cells)
+    if puzzle[row][col] != 0:
+        return json_error('No empty cells left to hint')
+
+    puzzle[row][col] = solution[row][col]
     return jsonify({'row': row, 'col': col, 'value': solution[row][col]})
 
 

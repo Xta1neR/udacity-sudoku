@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 import app as sudoku_app
@@ -141,8 +143,48 @@ def test_hint_returns_only_one_valid_empty_cell(client):
     assert response.status_code == 200
     data = response.get_json()
     assert set(data.keys()) == {"row", "col", "value"}
-    assert puzzle[data["row"]][data["col"]] == 0
-    assert data["value"] == solution[data["row"]][data["col"]]
+    assert sudoku_app.CURRENT["puzzle"][data["row"]][data["col"]] == data["value"]
+    assert sudoku_app.CURRENT["puzzle"][data["row"]][data["col"]] == solution[data["row"]][data["col"]]
+
+
+def test_hint_updates_server_puzzle_and_prevents_repeat_cells(client, monkeypatch):
+    solution = [
+        [5, 3, 4, 6, 7, 8, 9, 1, 2],
+        [6, 7, 2, 1, 9, 5, 3, 4, 8],
+        [1, 9, 8, 3, 4, 2, 5, 6, 7],
+        [8, 5, 9, 7, 6, 1, 4, 2, 3],
+        [4, 2, 6, 8, 5, 3, 7, 9, 1],
+        [7, 1, 3, 9, 2, 4, 8, 5, 6],
+        [9, 6, 1, 5, 3, 7, 2, 8, 4],
+        [2, 8, 7, 4, 1, 9, 6, 3, 5],
+        [3, 4, 5, 2, 8, 6, 1, 7, 9],
+    ]
+    puzzle = [row[:] for row in solution]
+    empty_positions = [(0, 2), (1, 8), (8, 0)]
+    for row, col in empty_positions:
+        puzzle[row][col] = 0
+    sudoku_app.CURRENT["puzzle"] = puzzle
+    sudoku_app.CURRENT["solution"] = solution
+
+    def fake_choice(cells):
+        return cells[0]
+
+    monkeypatch.setattr(random, "choice", fake_choice)
+
+    seen = set()
+    for _ in range(len(empty_positions)):
+        response = client.get("/hint")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert set(data.keys()) == {"row", "col", "value"}
+        assert data["value"] == solution[data["row"]][data["col"]]
+        assert (data["row"], data["col"]) not in seen
+        seen.add((data["row"], data["col"]))
+        assert sudoku_app.CURRENT["puzzle"][data["row"]][data["col"]] == data["value"]
+
+    response = client.get("/hint")
+    assert response.status_code == 400
+    assert "No empty cells" in response.get_json()["error"]
 
 
 def test_hint_returns_error_when_no_game_or_no_empty_cells(client):
