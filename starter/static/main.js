@@ -1,6 +1,7 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 const LEADERBOARD_KEY = 'sudokuLeaderboard';
+const THEME_KEY = 'sudokuTheme';
 const CLUES_BY_DIFFICULTY = {easy: 40, medium: 35, hard: 30};
 let puzzle = [];
 let startedAt = null;
@@ -9,6 +10,30 @@ let timerInterval = null;
 let hintsUsed = 0;
 let gameComplete = false;
 let scoreSaved = false;
+let gameDifficulty = null;
+
+function setMessage(text, isError = true) {
+  const message = document.getElementById('message');
+  message.style.color = isError ? '#d32f2f' : '#388e3c';
+  message.textContent = text;
+}
+
+function getPreferredTheme() {
+  const storedTheme = localStorage.getItem(THEME_KEY);
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    return storedTheme;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const toggle = document.getElementById('theme-toggle');
+  if (!toggle) return;
+  const isDark = theme === 'dark';
+  toggle.textContent = isDark ? 'Light mode' : 'Dark mode';
+  toggle.setAttribute('aria-pressed', String(isDark));
+}
 
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -21,8 +46,8 @@ function createBoardElement() {
       input.type = 'text';
       input.maxLength = 1;
       input.className = 'sudoku-cell';
-      input.dataset.row = i;
-      input.dataset.col = j;
+      input.dataset.row = String(i);
+      input.dataset.col = String(j);
       input.addEventListener('input', (e) => {
         const val = e.target.value.replace(/[^1-9]/g, '');
         e.target.value = val;
@@ -43,10 +68,11 @@ function renderPuzzle(puz) {
       const idx = i * SIZE + j;
       const val = puzzle[i][j];
       const inp = inputs[idx];
+      inp.className = 'sudoku-cell';
       if (val !== 0) {
-        inp.value = val;
+        inp.value = String(val);
         inp.disabled = true;
-        inp.className += ' prefilled';
+        inp.classList.add('prefilled');
       } else {
         inp.value = '';
         inp.disabled = false;
@@ -58,16 +84,37 @@ function renderPuzzle(puz) {
 async function newGame() {
   const difficulty = document.getElementById('difficulty').value;
   const clues = CLUES_BY_DIFFICULTY[difficulty];
-  const res = await fetch(`/new?clues=${clues}`);
-  const data = await res.json();
-  renderPuzzle(data.puzzle);
-  document.getElementById('message').textContent = '';
-  document.getElementById('score-form').hidden = true;
-  document.getElementById('player-name').value = '';
-  hintsUsed = 0;
-  gameComplete = false;
-  scoreSaved = false;
-  startTimer();
+
+  try {
+    const res = await fetch(`/new?clues=${clues}`);
+    if (!res.ok) {
+      throw new Error('New game request failed');
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error('Invalid game response');
+    }
+
+    if (!data || !Array.isArray(data.puzzle)) {
+      throw new Error('Invalid game payload');
+    }
+
+    renderPuzzle(data.puzzle);
+    document.getElementById('message').textContent = '';
+    document.getElementById('score-form').hidden = true;
+    document.getElementById('player-name').value = '';
+    hintsUsed = 0;
+    gameComplete = false;
+    scoreSaved = false;
+    gameDifficulty = difficulty;
+    startTimer();
+  } catch (error) {
+    console.error('Unable to start a new game.', error);
+    setMessage('Unable to start a new game. Please try again.');
+  }
 }
 
 function getElapsedSeconds() {
@@ -155,7 +202,7 @@ function saveScore(event) {
   entries.push({
     name,
     completionTime: completedInSeconds,
-    difficulty: document.getElementById('difficulty').value,
+    difficulty: gameDifficulty || document.getElementById('difficulty').value,
     hintsUsed
   });
   entries.sort((first, second) => first.completionTime - second.completionTime);
@@ -185,51 +232,139 @@ async function checkSolution() {
       board[i][j] = val ? parseInt(val, 10) : 0;
     }
   }
-  const res = await fetch('/check', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({board})
-  });
-  const data = await res.json();
-  const msg = document.getElementById('message');
-  if (data.error) {
-    msg.style.color = '#d32f2f';
-    msg.innerText = data.error;
-    return;
-  }
-  const incorrect = new Set(data.incorrect.map(x => x[0]*SIZE + x[1]));
-  for (let idx = 0; idx < inputs.length; idx++) {
-    const inp = inputs[idx];
-    if (inp.disabled) continue;
-    inp.className = 'sudoku-cell';
-    if (incorrect.has(idx)) {
-      inp.className = 'sudoku-cell incorrect';
+
+  try {
+    const res = await fetch('/check', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({board})
+    });
+
+    if (!res.ok) {
+      throw new Error('Check request failed');
     }
-  }
-  if (incorrect.size === 0) {
-    msg.style.color = '#388e3c';
-    msg.textContent = 'Congratulations! You solved it!';
-    if (!gameComplete) {
-      gameComplete = true;
-      stopTimer();
-      document.getElementById('score-form').hidden = false;
-      document.getElementById('player-name').focus();
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error('Invalid JSON response');
     }
-  } else {
-    msg.style.color = '#d32f2f';
-    msg.textContent = 'Some cells are incorrect.';
+
+    if (data && typeof data.error === 'string') {
+      setMessage(data.error);
+      return;
+    }
+
+    if (!data || !Array.isArray(data.incorrect)) {
+      throw new Error('Invalid check response');
+    }
+
+    const incorrect = new Set(data.incorrect.map(([row, col]) => row * SIZE + col));
+    for (let idx = 0; idx < inputs.length; idx++) {
+      const inp = inputs[idx];
+      if (inp.disabled) continue;
+      inp.className = 'sudoku-cell';
+      if (incorrect.has(idx)) {
+        inp.classList.add('incorrect');
+      }
+    }
+
+    if (incorrect.size === 0) {
+      setMessage('Congratulations! You solved it!', false);
+      if (!gameComplete) {
+        gameComplete = true;
+        stopTimer();
+        document.getElementById('score-form').hidden = false;
+        document.getElementById('player-name').focus();
+      }
+    } else {
+      setMessage('Some cells are incorrect.');
+    }
+  } catch (error) {
+    console.error('Unable to check the solution.', error);
+    setMessage('Unable to check the solution. Please try again.');
+  }
+}
+
+async function requestHint() {
+  if (gameComplete) return;
+
+  try {
+    const res = await fetch('/hint');
+    if (!res.ok) {
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        // ignore invalid JSON for a hint request failure
+      }
+      if (data && typeof data.error === 'string') {
+        setMessage(data.error);
+      }
+      return;
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      return;
+    }
+
+    const row = Number(data.row);
+    const col = Number(data.col);
+    const value = Number(data.value);
+
+    if (!Number.isInteger(row) || !Number.isInteger(col) || !Number.isInteger(value)) {
+      return;
+    }
+
+    const cellIndex = row * SIZE + col;
+    if (row < 0 || row >= SIZE || col < 0 || col >= SIZE || puzzle[row][col] !== 0) {
+      return;
+    }
+
+    const input = document.querySelector(`.sudoku-cell[data-row="${row}"][data-col="${col}"]`);
+    if (!input) {
+      return;
+    }
+
+    input.value = String(value);
+    input.disabled = true;
+    input.classList.remove('prefilled');
+    input.classList.add('hint');
+    puzzle[row][col] = value;
+    hintsUsed += 1;
+  } catch (error) {
+    console.error('Unable to fetch a hint.', error);
+    setMessage('Unable to fetch a hint. Please try again.');
   }
 }
 
 // Wire buttons
 window.addEventListener('load', () => {
+  const storedTheme = getPreferredTheme();
+  applyTheme(storedTheme);
+
+  const themeToggle = document.getElementById('theme-toggle');
+  themeToggle.addEventListener('click', () => {
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, nextTheme);
+    applyTheme(nextTheme);
+  });
+
   document.getElementById('new-game').addEventListener('click', newGame);
+  document.getElementById('hint').addEventListener('click', requestHint);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   document.getElementById('score-form').addEventListener('submit', saveScore);
   window.addEventListener('storage', (event) => {
     if (event.key === LEADERBOARD_KEY) renderLeaderboard();
+    if (event.key === THEME_KEY) {
+      const nextTheme = event.newValue === 'dark' || event.newValue === 'light' ? event.newValue : getPreferredTheme();
+      applyTheme(nextTheme);
+    }
   });
   renderLeaderboard();
-  // initialize
   newGame();
 });

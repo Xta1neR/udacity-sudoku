@@ -1,4 +1,9 @@
 :root {
+    --page-background: #f4f4f4;
+    --title-color: #333;
+    --panel-text: #222;
+    --field-background: #fff;
+    --field-border: #999;
     --board-edge: #26383d;
     --board-surface: #fff;
     --grid-line: #aebdc0;
@@ -9,10 +14,49 @@
     --prefilled-text: #102329;
     --cell-focus-background: #cce9df;
     --cell-incorrect-background: #ffd9d6;
+    --cell-hint-background: #dfefff;
+    --button-background: #1976d2;
+    --button-hover-background: #1565c0;
+    --table-header-background: #e8eef3;
+    --table-border: #ddd;
+    --empty-message-color: #555;
+    --message-error: #d32f2f;
+    --message-success: #388e3c;
+}
+
+:root[data-theme="dark"] {
+    --page-background: #101a1d;
+    --title-color: #edf7f2;
+    --panel-text: #edf7f2;
+    --field-background: #1b2a2c;
+    --field-border: #56716f;
+    --board-edge: #dce8e4;
+    --board-surface: #111d20;
+    --grid-line: #566a6b;
+    --box-divider: #dce8e4;
+    --cell-background: #172629;
+    --cell-alternate-background: #243a36;
+    --cell-text: #eff7f3;
+    --prefilled-text: #fff;
+    --cell-focus-background: #35534a;
+    --cell-incorrect-background: #663c39;
+    --cell-hint-background: #2f4968;
+    --button-background: #3f8fd8;
+    --button-hover-background: #2f71b8;
+    --table-header-background: #1e2d31;
+    --table-border: #486669;
+    --empty-message-color: #dfeedb;
+    --message-error: #ff9d9d;
+    --message-success: #8fe4a8;
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme]) {
+        --page-background: #101a1d;
+        --title-color: #edf7f2;
+        --panel-text: #edf7f2;
+        --field-background: #1b2a2c;
+        --field-border: #56716f;
         --board-edge: #dce8e4;
         --board-surface: #111d20;
         --grid-line: #566a6b;
@@ -23,12 +67,21 @@
         --prefilled-text: #fff;
         --cell-focus-background: #35534a;
         --cell-incorrect-background: #663c39;
+        --cell-hint-background: #2f4968;
+        --button-background: #3f8fd8;
+        --button-hover-background: #2f71b8;
+        --table-header-background: #1e2d31;
+        --table-border: #486669;
+        --empty-message-color: #dfeedb;
+        --message-error: #ff9d9d;
+        --message-success: #8fe4a8;
     }
 }
 
 body {
     font-family: Arial, sans-serif;
-    background: #f4f4f4;
+    background: var(--page-background);
+    color: var(--panel-text);
     text-align: center;
     margin: 0;
     padding: 0;
@@ -36,7 +89,7 @@ body {
 
 h1 {
     margin-top: 30px;
-    color: #333;
+    color: var(--title-color);
 }
 
 .game-options {
@@ -51,16 +104,16 @@ h1 {
 #player-name {
     min-height: 36px;
     padding: 6px 10px;
-    border: 1px solid #999;
+    border: 1px solid var(--field-border);
     border-radius: 4px;
-    background: #fff;
-    color: #222;
+    background: var(--field-background);
+    color: var(--panel-text);
     font: inherit;
 }
 
 .timer-label {
     margin-left: 12px;
-    color: #333;
+    color: var(--panel-text);
     font-variant-numeric: tabular-nums;
 }
 
@@ -111,7 +164,12 @@ h1 {
     color: var(--prefilled-text);
 }
 
-.sudoku-cell.incorrect {
+.sudoku-cell.hint {
+    background: var(--cell-hint-background);
+    font-weight: bold;
+}
+
+#sudoku-board .sudoku-cell.incorrect {
     background: var(--cell-incorrect-background);
 }
 
@@ -134,7 +192,7 @@ button {
     margin: 0 8px;
     font-size: 16px;
     border: none;
-    background: #1976d2;
+    background: var(--button-background);
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
@@ -142,13 +200,13 @@ button {
 }
 
 button:hover {
-    background: #1565c0;
+    background: var(--button-hover-background);
 }
 
 #message {
     margin-left: 20px;
     font-size: 16px;
-    color: #d32f2f;
+    color: var(--message-error);
 }
 
 #score-form {
@@ -171,7 +229,7 @@ button:hover {
 
 #leaderboard h2 {
     margin-bottom: 12px;
-    color: #333;
+    color: var(--title-color);
 }
 
 .leaderboard-scroll {
@@ -181,28 +239,37 @@ button:hover {
 #leaderboard table {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
+    background: var(--board-surface);
+    color: var(--panel-text);
 }
 
 #leaderboard th,
 #leaderboard td {
     padding: 10px 12px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--table-border);
     text-align: left;
 }
 
 #leaderboard th {
-    background: #e8eef3;
-    color: #222;
+    background: var(--table-header-background);
+    color: var(--panel-text);
 }
 
 #leaderboard-empty {
-    color: #555;
+    color: var(--empty-message-color);
 }
 
 @media (max-width: 520px) {
     .game-options {
         flex-wrap: wrap;
+    }
+
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 12px;
     }
 
     #score-form {

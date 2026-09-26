@@ -1,7 +1,8 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sudoku Game</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -18,8 +19,10 @@
   </div>
   <div id="sudoku-board"></div>
   <div class="controls">
-    <button id="new-game">New Game</button>
-    <button id="check-solution">Check Solution</button>
+    <button id="new-game" type="button">New Game</button>
+    <button id="hint" type="button">Hint</button>
+    <button id="check-solution" type="button">Check Solution</button>
+    <button id="theme-toggle" type="button" aria-pressed="false">Dark mode</button>
     <span id="message"></span>
   </div>
   <form id="score-form" hidden>
